@@ -65,6 +65,9 @@ let cubes = [];
 let isMouseDown = false;
 let lastCube = null;
 
+const ambientLight = new THREE.AmbientLight(0xffffff, 2); // Soft white light
+scene.add(ambientLight);
+
 window.addEventListener('mousedown', function (event) {
     const intersects = getRayIntersects(event);
     if (intersects.length > 0) {
@@ -96,9 +99,26 @@ window.addEventListener('mouseup', function (event) {
     }
 });
 
+let INTERSECTED;
+
+window.addEventListener('mousemove', function (event) {
+    const intersects = getRayIntersects(event);
+    if ( intersects.length > 0 ) {
+        if ( INTERSECTED != intersects[ 0 ].object ) {
+            if ( INTERSECTED ) { INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex ) };
+            INTERSECTED = intersects[ 0 ].object;
+            INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
+            INTERSECTED.material.emissive.setHex( 0xffff00 );
+        }
+    } else {
+        if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+        INTERSECTED = null;
+    }
+});
+
 function newCube(x, y, z) {
     const cubeGeom = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
-    const cubeMaterial = new THREE.MeshBasicMaterial({ color: new THREE.Color(0x000000) });
+    const cubeMaterial = new THREE.MeshStandardMaterial({ color: new THREE.Color(0x000000), emissive: 0x000000 });
     const cube = new THREE.Mesh(cubeGeom, cubeMaterial);
     cube.position.set(x, y, z);
 
@@ -114,7 +134,7 @@ function newCube(x, y, z) {
 
     sticker_positions.forEach(({ color, position, rotation }) => {
         const stickerGeom = new THREE.PlaneGeometry(stickerSize, stickerSize);
-        const stickerMaterial = new THREE.MeshBasicMaterial({ color: color });
+        const stickerMaterial = new THREE.MeshStandardMaterial({ color: color, emissive: 0x000000 });
         const sticker = new THREE.Mesh(stickerGeom, stickerMaterial);
         sticker.position.set(...position);
         sticker.rotation.set(...rotation);
