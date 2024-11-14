@@ -52,7 +52,7 @@ renderer.setAnimationLoop( animate );
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 
-const faceColors = [0x00FFEA, 0xfffff, 0x98D136, 0xD97DF5, 0x6D5CED, 0xEC4A75]
+const faceColors = [0x00FFEA, 0xffffff, 0x98D136, 0xD97DF5, 0x6D5CED, 0xEC4A75]
 const cubeSize = 2;
 const stickerSize = 1.8;
 const stickerRaise = 0.01;
