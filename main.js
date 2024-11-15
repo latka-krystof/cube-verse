@@ -19,17 +19,38 @@ styles.textContent = `
 }
 
 .congrats-message h2 {
-    font-size: 36px;
+    font-size: 46px;
     margin-bottom: 10px;
 }
 
 .congrats-message p {
-    font-size: 24px;
+    font-size: 34px;
     margin: 0;
 }
 
 .fade-in {
     opacity: 1;
+}
+
+.restart-button {
+    background-color: transparent; 
+    border: 2px solid #39FF14; 
+    color: white; 
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 28px;
+    font-weight: bold; 
+    margin: 50px; 
+    cursor: pointer;
+    border-radius: 12px; 
+    transition: color 0.3s; 
+}
+
+.restart-button:hover {
+    color: #39FF14; 
+    background-color: transparent; 
 }
 `;
 document.head.appendChild(styles);
@@ -108,7 +129,7 @@ window.addEventListener('mousemove', function (event) {
             if ( INTERSECTED ) { INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex ) };
             INTERSECTED = intersects[ 0 ].object;
             INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
-            INTERSECTED.material.emissive.setHex( 0xffff00 );
+            INTERSECTED.material.emissive.setHex( 0x878787 );
         }
     } else {
         if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
@@ -748,21 +769,63 @@ function updateDissolveEffect() {
         congrats.className = 'congrats-message';
         congrats.innerHTML = `
             <h2>winner winner chicken dinner</h2>
-            <p>you killed it.     - delia</p>
+            <p>congrats on solving our rubik's cube.</p>
+            <button class="restart-button">let's go again.</button>
         `;
         document.body.appendChild(congrats);
+
+        // Add click handler to restart button
+        const restartButton = congrats.querySelector('.restart-button');
+        restartButton.addEventListener('click', () => {
+            congrats.style.opacity = '0';
+            setTimeout(() => {
+                congrats.remove();
+                resetGame();
+            }, 500);
+        });
         
         // Trigger fade in
         setTimeout(() => {
             congrats.classList.add('fade-in');
         }, 10);
-
-        // Optional: Remove the message after 5 seconds // maybe later add a button here to play again
-        setTimeout(() => {
-            congrats.style.opacity = '0';
-            setTimeout(() => congrats.remove(), 500);
-        }, 5000);
     }
+}
+
+function resetGame() {
+    // Reset game state variables
+    isMoving = false;
+    moveAxis = undefined;
+    moveDirection = undefined;
+    clickVector = undefined;
+    solvedAnimationTriggered = false;
+    isScrambling = true;
+    isDissolving = false;
+
+    // Clear cubes array
+    cubes = [];
+
+    // Reset scene rotation
+    scene.rotation.set(0, 0, 0);
+
+    // Reset camera position
+    camera.position.set(5, 5, 10);
+    controls.target.set(0, 0, 0);
+    controls.update();
+
+    // Recreate all cubes
+    for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 3; j++) {
+            for (let k = 0; k < 3; k++) {
+                let x = (i - 1) * increment;
+                let y = (j - 1) * increment;
+                let z = (k - 1) * increment;
+                newCube(x, y, z);
+            }
+        }
+    }
+
+    // Start new scramble
+    setTimeout(scrambleCube, 1200);
 }
 
 function animate() {
