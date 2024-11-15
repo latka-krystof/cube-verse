@@ -19,17 +19,38 @@ styles.textContent = `
 }
 
 .congrats-message h2 {
-    font-size: 36px;
+    font-size: 46px;
     margin-bottom: 10px;
 }
 
 .congrats-message p {
-    font-size: 24px;
+    font-size: 34px;
     margin: 0;
 }
 
 .fade-in {
     opacity: 1;
+}
+
+.restart-button {
+    background-color: transparent; 
+    border: 2px solid #39FF14; 
+    color: white; 
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 28px;
+    font-weight: bold; 
+    margin: 50px; 
+    cursor: pointer;
+    border-radius: 12px; 
+    transition: color 0.3s; 
+}
+
+.restart-button:hover {
+    color: #39FF14; 
+    background-color: transparent; 
 }
 `;
 document.head.appendChild(styles);
@@ -65,6 +86,9 @@ let cubes = [];
 let isMouseDown = false;
 let lastCube = null;
 
+const ambientLight = new THREE.AmbientLight(0xffffff, 2); // Soft white light
+scene.add(ambientLight);
+
 window.addEventListener('mousedown', function (event) {
     const intersects = getRayIntersects(event);
     if (intersects.length > 0) {
@@ -96,9 +120,26 @@ window.addEventListener('mouseup', function (event) {
     }
 });
 
+let INTERSECTED;
+
+window.addEventListener('mousemove', function (event) {
+    const intersects = getRayIntersects(event);
+    if ( intersects.length > 0 ) {
+        if ( INTERSECTED != intersects[ 0 ].object ) {
+            if ( INTERSECTED ) { INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex ) };
+            INTERSECTED = intersects[ 0 ].object;
+            INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
+            INTERSECTED.material.emissive.setHex( 0x878787 );
+        }
+    } else {
+        if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
+        INTERSECTED = null;
+    }
+});
+
 function newCube(x, y, z) {
     const cubeGeom = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
-    const cubeMaterial = new THREE.MeshBasicMaterial({ color: new THREE.Color(0x000000) });
+    const cubeMaterial = new THREE.MeshStandardMaterial({ color: new THREE.Color(0x000000), emissive: 0x000000 });
     const cube = new THREE.Mesh(cubeGeom, cubeMaterial);
     cube.position.set(x, y, z);
 
@@ -114,7 +155,7 @@ function newCube(x, y, z) {
 
     sticker_positions.forEach(({ color, position, rotation }) => {
         const stickerGeom = new THREE.PlaneGeometry(stickerSize, stickerSize);
-        const stickerMaterial = new THREE.MeshBasicMaterial({ color: color });
+        const stickerMaterial = new THREE.MeshStandardMaterial({ color: color, emissive: 0x000000 });
         const sticker = new THREE.Mesh(stickerGeom, stickerMaterial);
         sticker.position.set(...position);
         sticker.rotation.set(...rotation);
@@ -728,21 +769,63 @@ function updateDissolveEffect() {
         congrats.className = 'congrats-message';
         congrats.innerHTML = `
             <h2>winner winner chicken dinner</h2>
-            <p>you killed it.     - delia</p>
+            <p>congrats on solving our rubik's cube.</p>
+            <button class="restart-button">let's go again.</button>
         `;
         document.body.appendChild(congrats);
+
+        // Add click handler to restart button
+        const restartButton = congrats.querySelector('.restart-button');
+        restartButton.addEventListener('click', () => {
+            congrats.style.opacity = '0';
+            setTimeout(() => {
+                congrats.remove();
+                resetGame();
+            }, 500);
+        });
         
         // Trigger fade in
         setTimeout(() => {
             congrats.classList.add('fade-in');
         }, 10);
-
-        // Optional: Remove the message after 5 seconds // maybe later add a button here to play again
-        setTimeout(() => {
-            congrats.style.opacity = '0';
-            setTimeout(() => congrats.remove(), 500);
-        }, 5000);
     }
+}
+
+function resetGame() {
+    // Reset game state variables
+    isMoving = false;
+    moveAxis = undefined;
+    moveDirection = undefined;
+    clickVector = undefined;
+    solvedAnimationTriggered = false;
+    isScrambling = true;
+    isDissolving = false;
+
+    // Clear cubes array
+    cubes = [];
+
+    // Reset scene rotation
+    scene.rotation.set(0, 0, 0);
+
+    // Reset camera position
+    camera.position.set(5, 5, 10);
+    controls.target.set(0, 0, 0);
+    controls.update();
+
+    // Recreate all cubes
+    for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 3; j++) {
+            for (let k = 0; k < 3; k++) {
+                let x = (i - 1) * increment;
+                let y = (j - 1) * increment;
+                let z = (k - 1) * increment;
+                newCube(x, y, z);
+            }
+        }
+    }
+
+    // Start new scramble
+    setTimeout(scrambleCube, 1200);
 }
 
 function animate() {
