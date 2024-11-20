@@ -10,6 +10,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "-": "^0.0.1",
+    "save": "^2.9.0",
     "three": "^0.170.0"
   },
   "devDependencies": {

@@ -86,9 +86,6 @@ let cubes = [];
 let isMouseDown = false;
 let lastCube = null;
 
-const ambientLight = new THREE.AmbientLight(0xffffff, 2); // Soft white light
-scene.add(ambientLight);
-
 window.addEventListener('mousedown', function (event) {
     const intersects = getRayIntersects(event);
     if (intersects.length > 0) {
@@ -137,6 +134,47 @@ window.addEventListener('mousemove', function (event) {
     }
 });
 
+// texture loading
+const textureLoader = new THREE.TextureLoader();
+
+const normalMap = textureLoader.load('assets/normal.png');
+const roughnessMap = textureLoader.load('assets/roughness.png');
+const aoMap = textureLoader.load('assets/ambientOcclusion.png');
+const displacementMap = textureLoader.load('assets/height.png');
+const baseColorMap = textureLoader.load('assets/basecolor.png');
+const metallicMap = textureLoader.load('assets/metallic.png'); 
+
+baseColorMap.colorSpace = THREE.SRGBColorSpace;
+baseColorMap.encoding = THREE.sRGBEncoding; 
+
+// Enhance renderer settings
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1;  // Brighter exposure
+
+// Create brighter environment map
+const pmremGenerator = new THREE.PMREMGenerator(renderer);
+scene.environment = pmremGenerator.fromScene(new THREE.Scene()).texture;
+
+const ambientLight = new THREE.AmbientLight(0xffffff, 1.7); // Soft white light
+scene.add(ambientLight);
+
+const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+directionalLight.position.set(5, 5, 5);
+scene.add(directionalLight);
+
+const pointLights = [
+    { color: 0xffffff, intensity: 0.5, position: [10, 10, 10] },    // Gold-tinted light
+    { color: 0xffffff, intensity: 0.5, position: [-10, -10, 10] },
+    { color: 0xffffff, intensity: 0.5, position: [0, 10, -10] },    // Gold-tinted light
+    { color: 0xffffff, intensity: 0.5, position: [-10, 0, 10] }
+];
+
+pointLights.forEach(light => {
+    const pointLight = new THREE.PointLight(light.color, light.intensity);
+    pointLight.position.set(...light.position);  // Spread operator to set x, y, z
+    scene.add(pointLight);
+});
+
 function newCube(x, y, z) {
     const cubeGeom = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
     const cubeMaterial = new THREE.MeshStandardMaterial({ color: new THREE.Color(0x000000), emissive: 0x000000 });
@@ -154,11 +192,33 @@ function newCube(x, y, z) {
     ];
 
     sticker_positions.forEach(({ color, position, rotation }) => {
-        const stickerGeom = new THREE.PlaneGeometry(stickerSize, stickerSize);
-        const stickerMaterial = new THREE.MeshStandardMaterial({ color: color, emissive: 0x000000 });
+        const stickerGeom = new THREE.PlaneGeometry(stickerSize, stickerSize, 32, 32);
+        // const stickerMaterial = new THREE.MeshStandardMaterial({ color: color, emissive: 0x000000 });
+
+        const stickerMaterial = new THREE.MeshStandardMaterial({
+            //map: baseColorMap,
+            color: color,
+            normalMap: normalMap,
+            //normalScale: new THREE.Vector2(1, 1), // Adjust the normal intensity
+            roughnessMap: roughnessMap,
+            roughness: 1, // Base roughness
+            metalnessMap: metallicMap, // Use metallic map
+            //metalness: 1.0,   
+            aoMap: aoMap,
+            aoMapIntensity: 1,
+            displacementMap: displacementMap,
+            displacementScale: 0.1, // Subtle displacement
+            envMapIntensity: 0.8, 
+            clearcoat: 0.3,       
+            clearcoatRoughness: 0.2,
+        });
+
         const sticker = new THREE.Mesh(stickerGeom, stickerMaterial);
         sticker.position.set(...position);
         sticker.rotation.set(...rotation);
+
+        stickerGeom.setAttribute('uv2', new THREE.BufferAttribute(stickerGeom.attributes.uv.array, 2)); // ambient occlusion map
+
         cube.add(sticker);
     });
 	
