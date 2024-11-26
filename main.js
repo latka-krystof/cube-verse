@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import * as dat from 'dat.gui';
 
 const styles = document.createElement('style');
 styles.textContent = `
@@ -81,13 +82,33 @@ const spacing = 0.05;
 const increment = cubeSize + spacing;
 const maxExtent = (cubeSize * 3 + spacing * 2 + 2 * stickerRaise) / 2;
 
+const colorState = {
+    right: '#00FFEA',  
+    left: '#FFFFFF',  
+    top: '#98D136',    
+    bottom: '#D97DF5', 
+    front: '#6D5CED',  
+    back: '#EC4A75',   
+};
+
+// Create GUI
+const gui = new dat.GUI();
+const colorsFolder = gui.addFolder('Face Colors');
+
+// Add color controls
+colorsFolder.addColor(colorState, 'right').name('Right Face').onChange(updateColors);
+colorsFolder.addColor(colorState, 'left').name('Left Face').onChange(updateColors);
+colorsFolder.addColor(colorState, 'top').name('Top Face').onChange(updateColors);
+colorsFolder.addColor(colorState, 'bottom').name('Bottom Face').onChange(updateColors);
+colorsFolder.addColor(colorState, 'front').name('Front Face').onChange(updateColors);
+colorsFolder.addColor(colorState, 'back').name('Back Face').onChange(updateColors);
+
+colorsFolder.open();
+
 let cubes = [];
 
 let isMouseDown = false;
 let lastCube = null;
-
-const ambientLight = new THREE.AmbientLight(0xffffff, 2); // Soft white light
-scene.add(ambientLight);
 
 window.addEventListener('mousedown', function (event) {
     const intersects = getRayIntersects(event);
@@ -137,34 +158,106 @@ window.addEventListener('mousemove', function (event) {
     }
 });
 
+// texture loading
+const textureLoader = new THREE.TextureLoader();
+function loadTexture(path, name) {
+    return textureLoader.load(
+        path,
+        () => console.log(`${name} loaded successfully`),
+        undefined, // Optional: progress handler
+        (err) => console.error(`Error loading ${name}:`, err)
+    );
+}
+
+const normalMap = loadTexture('assets/normal.png');
+const roughnessMap = loadTexture('assets/roughness.png');
+const displacementMap = loadTexture('assets/height.png');
+const baseColorMap = loadTexture('assets/basecolor.png');
+const aoMap = loadTexture('assets/ao.png');
+const metallicMap = loadTexture('assets/metallic.png');
+
+const ambientLight = new THREE.AmbientLight(0xffffff, 1.5); 
+scene.add(ambientLight);
+
+const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+directionalLight.position.set(2, 3, 6);
+scene.add(directionalLight);
+
+const pointLights = [
+    { color: 0xffffff, intensity: 0.5, position: [2, 3, 3] },    
+    { color: 0xffffff, intensity: 0.5, position: [-5, 6, 10] },
+    { color: 0xffffff, intensity: 0.5, position: [1, 8, -10] },    
+    { color: 0xffffff, intensity: 0.5, position: [7, 5, 10] }
+];
+
+pointLights.forEach(light => {
+    const pointLight = new THREE.PointLight(light.color, light.intensity);
+    pointLight.position.set(...light.position);  // Spread operator to set x, y, z
+    scene.add(pointLight);
+});
+
 function newCube(x, y, z) {
     const cubeGeom = new THREE.BoxGeometry(cubeSize, cubeSize, cubeSize);
     const cubeMaterial = new THREE.MeshStandardMaterial({ color: new THREE.Color(0x000000), emissive: 0x000000 });
     const cube = new THREE.Mesh(cubeGeom, cubeMaterial);
     cube.position.set(x, y, z);
 
+    cube.castShadow = true;
+    cube.receiveShadow = true;
+
     // Create and position stickers on each face
     const sticker_positions = [
-        { color: faceColors[0], position: [cubeSize / 2 + 0.01, 0, 0], rotation: [0, Math.PI / 2, 0] }, // Right
-        { color: faceColors[1], position: [-cubeSize / 2 - 0.01, 0, 0], rotation: [0, -Math.PI / 2, 0] }, // Left
-        { color: faceColors[2], position: [0, cubeSize / 2 + 0.01, 0], rotation: [-Math.PI / 2, 0, 0] }, // Top
-        { color: faceColors[3], position: [0, -cubeSize / 2 - 0.01, 0], rotation: [Math.PI / 2, 0, 0] }, // Bottom
-        { color: faceColors[4], position: [0, 0, cubeSize / 2 + 0.01], rotation: [0, 0, 0] }, // Front
-        { color: faceColors[5], position: [0, 0, -cubeSize / 2 - 0.01], rotation: [0, Math.PI, 0] }, // Back
+        { face: 'right', position: [cubeSize / 2 + 0.01, 0, 0], rotation: [0, Math.PI / 2, 0] }, // right
+        { face: 'left', position: [-cubeSize / 2 - 0.01, 0, 0], rotation: [0, -Math.PI / 2, 0] }, // left
+        { face: 'top', position: [0, cubeSize / 2 + 0.01, 0], rotation: [-Math.PI / 2, 0, 0] }, // top
+        { face: 'bottom', position: [0, -cubeSize / 2 - 0.01, 0], rotation: [Math.PI / 2, 0, 0] }, // bottom
+        { face: 'front', position: [0, 0, cubeSize / 2 + 0.01], rotation: [0, 0, 0] }, //front
+        { face: 'back', position: [0, 0, -cubeSize / 2 - 0.01], rotation: [0, Math.PI, 0] } // back
     ];
 
-    sticker_positions.forEach(({ color, position, rotation }) => {
-        const stickerGeom = new THREE.PlaneGeometry(stickerSize, stickerSize);
-        const stickerMaterial = new THREE.MeshStandardMaterial({ color: color, emissive: 0x000000 });
+    sticker_positions.forEach(({ face, position, rotation }) => {
+        const stickerGeom = new THREE.PlaneGeometry(stickerSize, stickerSize, 32, 32);
+        // const stickerMaterial = new THREE.MeshStandardMaterial({ color: color, emissive: 0x000000 });
+
+        const stickerMaterial = new THREE.MeshStandardMaterial({
+            // map: baseColorMap,
+            color: colorState[face],
+            //emissive: 0x999999,
+            normalMap: normalMap,
+            roughnessMap: roughnessMap,
+            aoMap: aoMap,
+            displacementMap: displacementMap,
+            displacementScale: 0.09, // Subtle displacement
+            metalnessMap: metallicMap
+        });
+
         const sticker = new THREE.Mesh(stickerGeom, stickerMaterial);
         sticker.position.set(...position);
         sticker.rotation.set(...rotation);
+        sticker.userData.face = face;
+
+        sticker.castShadow = true;
+        sticker.receiveShadow = true;
+
+        stickerGeom.setAttribute('uv2', new THREE.BufferAttribute(stickerGeom.attributes.uv.array, 2)); // ambient occlusion map
+
         cube.add(sticker);
     });
 	
     cube.rubikPosition = cube.position.clone();
     scene.add(cube);
     cubes.push(cube);
+}
+
+// update colors
+function updateColors() {
+    cubes.forEach(cube => {
+        cube.children.forEach(sticker => {
+            if (sticker.userData.face) {
+                sticker.material.color.setStyle(colorState[sticker.userData.face]);
+            }
+        });
+    });
 }
 
 for (let i = 0; i < 3; i++) {
