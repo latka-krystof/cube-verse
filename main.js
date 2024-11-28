@@ -53,9 +53,59 @@ styles.textContent = `
     color: #39FF14; 
     background-color: transparent; 
 }
+
+.menu-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg, #1e1e1e, #292929);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+}
+
+.menu-container h1 {
+    font-size: 48px;
+    margin-bottom: 20px;
+}
+
+.menu-container p {
+    font-size: 20px;
+    margin-bottom: 40px;
+}
+
+.difficulty-buttons {
+    display: flex;
+    gap: 20px;
+}
+
+.difficulty-button {
+    padding: 15px 30px;
+    font-size: 18px;
+    border: 2px solid white;
+    border-radius: 10px;
+    background-color: transparent;
+    color: white;
+    cursor: pointer;
+    transition: 0.3s ease;
+}
+
+.difficulty-button:hover {
+    background-color: white;
+    color: black;
+}
+
 `;
 document.head.appendChild(styles);
 
+
+// Difficulty selection and menu logic
+let scrambleMoves = 3; // Default difficulty
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
@@ -528,15 +578,12 @@ let isScrambling = true;
 // eventually change scramblecount to something big and make it faster
 
 function scrambleCube() { 
-    let scrambleCount = 3; // Number of random moves -> change later to bigger number, keep now for implementing final animation
+    let scrambleCount = scrambleMoves; // Dynamically set based on difficulty
     let currentScramble = 0;
-
-    let lastIntersectedObj = null;
 
     function simulateMove() {
         if (currentScramble < scrambleCount) {
-            // 1. Simulate clicking on a random cube face (mousedown)
-            // Pick a random cube
+            // Simulate clicking on a random cube face (mousedown)
             const randomCube = cubes[Math.floor(Math.random() * cubes.length)];
             
             // Pick a random face position for intersect
@@ -555,40 +602,34 @@ function scrambleCube() {
                 .multiplyScalar(randomFace.value);
 
             onCubeMouseDown(null, randomCube, faceCentroid);
-            lastIntersectedObj = randomCube;
 
-            // 2. Simulate dragging to a valid adjacent cube (mouseup)
-            // Calculate a valid drag to an adjacent cube in the same layer
+            // Simulate dragging to a valid adjacent cube (mouseup)
             setTimeout(() => {
-                if (lastIntersectedObj && clickVector) {
-                    // Find all cubes in the same layer
-                    const samePlane = cubes.filter(cube => {
-                        if (clickFace === 'x') {
-                            return nearlyEqual(cube.rubikPosition.x, clickVector.x);
-                        } else if (clickFace === 'y') {
-                            return nearlyEqual(cube.rubikPosition.y, clickVector.y);
-                        } else if (clickFace === 'z') {
-                            return nearlyEqual(cube.rubikPosition.z, clickVector.z);
-                        }
-                        return false;
-                    });
-
-                    // Pick a random cube from the same layer that's not the start cube
-                    const validTargets = samePlane.filter(cube => cube !== lastIntersectedObj);
-                    const targetCube = validTargets[Math.floor(Math.random() * validTargets.length)];
-
-                    if (targetCube) {
-                        onCubeMouseUp(null, targetCube);
-                        currentScramble++;
-
-                        // Wait for move to complete before next scramble
-                        let interval = setInterval(() => {
-                            if (!isMoving) {
-                                clearInterval(interval);
-                                simulateMove();
-                            }
-                        }, 100);
+                const samePlane = cubes.filter(cube => {
+                    if (clickFace === 'x') {
+                        return nearlyEqual(cube.rubikPosition.x, clickVector.x);
+                    } else if (clickFace === 'y') {
+                        return nearlyEqual(cube.rubikPosition.y, clickVector.y);
+                    } else if (clickFace === 'z') {
+                        return nearlyEqual(cube.rubikPosition.z, clickVector.z);
                     }
+                    return false;
+                });
+
+                const validTargets = samePlane.filter(cube => cube !== randomCube);
+                const targetCube = validTargets[Math.floor(Math.random() * validTargets.length)];
+
+                if (targetCube) {
+                    onCubeMouseUp(null, targetCube);
+                    currentScramble++;
+
+                    // Wait for the move to complete before starting the next
+                    let interval = setInterval(() => {
+                        if (!isMoving) {
+                            clearInterval(interval);
+                            simulateMove();
+                        }
+                    }, 100);
                 }
             }, 50); // Small delay between mousedown and mouseup
         } else {
@@ -599,6 +640,7 @@ function scrambleCube() {
 
     simulateMove();
 }
+
 
 function startSolvedAnimation() {
     let solvedRotation = { y: 0 };
@@ -941,3 +983,22 @@ function animate() {
 
 if (isScrambling)
     setTimeout(scrambleCube, 1200);
+
+
+
+document.addEventListener("DOMContentLoaded", () => {
+    const menu = document.getElementById('menu');
+    const buttons = document.querySelectorAll('.difficulty-button');
+
+    buttons.forEach(button => {
+        button.addEventListener('click', () => {
+            const difficulty = button.dataset.difficulty;
+            if (difficulty === 'medium') scrambleMoves = 6;
+            else if (difficulty === 'hard') scrambleMoves = 30;
+
+            // Hide the menu and start the game
+            menu.style.display = 'none';
+            scrambleCube();
+        });
+    });
+});
