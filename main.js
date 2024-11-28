@@ -56,21 +56,22 @@ styles.textContent = `
 
 .menu-container {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(45deg, #1e1e1e, #292929);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.8);
     color: white;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    z-index: 10;
+    padding: 30px 50px;
+    border-radius: 10px;
+    text-align: center;
+    font-family: Arial, sans-serif;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    opacity: 1;
+    transition: opacity 0.5s;
 }
 
 .menu-container h1 {
-    font-size: 48px;
+    font-size: 46px;
     margin-bottom: 20px;
 }
 
@@ -81,31 +82,34 @@ styles.textContent = `
 
 .difficulty-buttons {
     display: flex;
+    justify-content: center;
     gap: 20px;
 }
 
 .difficulty-button {
+    background-color: transparent;
+    border: 2px solid #39FF14;
+    color: white;
     padding: 15px 30px;
     font-size: 18px;
-    border: 2px solid white;
     border-radius: 10px;
-    background-color: transparent;
-    color: white;
     cursor: pointer;
+    font-weight: bold;
     transition: 0.3s ease;
 }
 
 .difficulty-button:hover {
-    background-color: white;
+    background-color: #39FF14;
     color: black;
 }
+
 
 `;
 document.head.appendChild(styles);
 
 
 // Difficulty selection and menu logic
-let scrambleMoves = 3; // Default difficulty
+let scrambleMoves = 0; // Default difficulty
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
@@ -926,6 +930,16 @@ function updateDissolveEffect() {
     }
 }
 
+function startGame() {
+    const menu = document.getElementById('menu');
+    menu.style.opacity = '0'; // Fade out menu
+    setTimeout(() => {
+        menu.style.display = 'none'; // Hide menu after fade-out
+    }, 500);
+    console.log("Game started");
+}
+
+
 function resetGame() {
     // Reset game state variables
     isMoving = false;
@@ -993,8 +1007,11 @@ document.addEventListener("DOMContentLoaded", () => {
     buttons.forEach(button => {
         button.addEventListener('click', () => {
             const difficulty = button.dataset.difficulty;
-            if (difficulty === 'medium') scrambleMoves = 6;
+            if (difficulty === 'easy') scrambleMoves = 3;  // Fix for Easy
+            else if (difficulty === 'medium') scrambleMoves = 6;
             else if (difficulty === 'hard') scrambleMoves = 30;
+
+            console.log(`Scramble Moves set to: ${scrambleMoves}`); // Debugging output
 
             // Hide the menu and start the game
             menu.style.display = 'none';
