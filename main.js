@@ -66,9 +66,12 @@ renderer.setSize( window.innerWidth, window.innerHeight );
 document.body.appendChild( renderer.domElement );
 
 const controls = new OrbitControls(camera, renderer.domElement);
-camera.position.set(120, 50, -260);
-controls.target.set(0, 10, -327);
+camera.position.set(60, 50, -270);
+controls.target.set(0, 42, -316);
+camera.lookAt(0, 42, -316);
 controls.enabled = true;
+
+scene.rotation.set(0, 0, 0);
 
 renderer.setAnimationLoop( animate );
 
@@ -920,8 +923,9 @@ function resetGame() {
     scene.rotation.set(0, 0, 0);
 
     // Reset camera position
-    camera.position.set(120, 50, -260);
-    controls.target.set(0, 10, -327);
+    camera.position.set(60, 50, -270);
+    controls.target.set(0, 42, -316);
+    camera.lookAt(0, 42, -316);
     controls.update();
 
     if (mixer) {
@@ -1002,7 +1006,6 @@ function introAnimation() {
                 if (rightHandBone && !isDetached) {
                     // Update the position of each small cube in the Rubik's cube based on the right hand bone's position
                     const handPosition = rightHandBone.getWorldPosition(new THREE.Vector3());
-                    console.log(handPosition);
                     cubes.forEach((cube, index) => {
                         cube.position.copy(handPosition).add(originPositions[index]).add(offset);
                         cube.rubikPosition = cube.position.clone();
@@ -1030,12 +1033,13 @@ function introAnimation() {
                             // Stop the entire function when the cube reaches y = 0
                             cubes.forEach((cube, index) => {
                                 cube.position.set(0, 0, 0).add(originPositions[index]);
-                                cube.rubikPosition = cube.position.clone();
                                 cube.rotation.set(0, 0, 0);
+                                cube.rubikPosition = cube.position.clone();
                             });
 
-                            camera.position.set(30, 10, 16);
+                            camera.position.set(14, 9, -10);
                             controls.target.set(0, 0, 0);
+                            camera.lookAt(0, 0, 0);
                             controls.enabled = true; 
     
                             // Set stopExecution to true to halt all further updates
@@ -1046,14 +1050,15 @@ function introAnimation() {
                         } else {
                             cubes.forEach((cube, index) => {
                                 cube.position.copy(position).add(originPositions[index]);
+                                cube.rotation.x = 4.0 * Math.PI / 3.5 * (time);
+                                cube.rotation.y = 4.0 * Math.PI / 3.5 * (time);
                                 cube.rubikPosition = cube.position.clone();
-
-                                cube.rotation.x = 16.0 * Math.PI / 7.0 * (time);
-                                cube.rotation.y = 16.0 * Math.PI / 7.0 * (time);
                             });
 
-                            const cameraOffset = new THREE.Vector3(120, 40, 67); // Adjust the offset as needed
+                            const cameraOffset = new THREE.Vector3(60, 8, 47); // Adjust the offset as needed
                             cameraOffset.divideScalar(1 + time);
+                            const timedShift = new THREE.Vector3(0, 2, -2); 
+                            cameraOffset.add(timedShift.multiplyScalar(time));
                         
                             // Calculate the center position of the Rubik's cube
                             const cubeCenter = new THREE.Vector3();
@@ -1063,7 +1068,10 @@ function introAnimation() {
                             cubeCenter.divideScalar(cubes.length);
     
                             camera.position.copy(position).add(cameraOffset);
+                            controls.target.copy(cubeCenter);
                             camera.lookAt(cubeCenter);
+
+                            console.log(time, camera.position);
     
                             // Disable controls during the throw
                             controls.enabled = false;
