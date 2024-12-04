@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader';
 import * as dat from 'dat.gui';
 
 const styles = document.createElement('style');
@@ -119,9 +120,12 @@ renderer.setSize( window.innerWidth, window.innerHeight );
 document.body.appendChild( renderer.domElement );
 
 const controls = new OrbitControls(camera, renderer.domElement);
-camera.position.set(5, 5, 10);
-controls.target.set(0, 0, 0);
+camera.position.set(60, 50, -270);
+controls.target.set(0, 42, -316);
+camera.lookAt(0, 42, -316);
 controls.enabled = true;
+
+scene.rotation.set(0, 0, 0);
 
 renderer.setAnimationLoop( animate );
 
@@ -312,17 +316,6 @@ function updateColors() {
             }
         });
     });
-}
-
-for (let i = 0; i < 3; i++) {
-	for (let j = 0; j < 3; j++) {
-		for (let k = 0; k < 3; k++) {
-			let x = (i - 1) * increment;
-			let y = (j - 1) * increment;
-			let z = (k - 1) * increment;
-			newCube(x, y, z);
-		}
-	}
 }
 
 function principalComponent(v) {
@@ -726,9 +719,6 @@ function createParticleSystem() {
     }
 }
 
-// add particles to scene
-createParticleSystem();
-
 function updateParticles() {
     if (!particleSystem || !particleSystem.visible) return;
 
@@ -939,6 +929,21 @@ function startGame() {
     console.log("Game started");
 }
 
+const clock = new THREE.Clock();
+let mixer;
+let throwAction;
+let fbx;
+const loader = new FBXLoader();
+loader.setPath('./assets/');
+
+let isDetached = true;
+const attachTime = 1.5;
+const detachTime = 3.5;
+
+const initialVelocity = new THREE.Vector3(0, 5, 87);
+const gravity = new THREE.Vector3(0, -9.81, 0);
+
+let originPositions = [];
 
 function resetGame() {
     // Reset game state variables
@@ -949,32 +954,183 @@ function resetGame() {
     solvedAnimationTriggered = false;
     isScrambling = true;
     isDissolving = false;
+    isDetached = true;
+
+    particles = [];
+    createParticleSystem();
 
     // Clear cubes array
     cubes = [];
+    originPositions = [];
 
     // Reset scene rotation
     scene.rotation.set(0, 0, 0);
 
     // Reset camera position
-    camera.position.set(5, 5, 10);
-    controls.target.set(0, 0, 0);
+    camera.position.set(60, 50, -270);
+    controls.target.set(0, 42, -316);
+    camera.lookAt(0, 42, -316);
     controls.update();
 
-    // Recreate all cubes
+    if (mixer) {
+        mixer.stopAllAction();
+        mixer.uncacheRoot(mixer.getRoot());
+        mixer = null;
+    }
+
+    if (throwAction) {
+        throwAction.reset();
+        throwAction = null;
+    }
+
+    // Reset the clock
+    clock.stop();
+    clock.start();
+
+    // Remove old animated character from the scene
+    if (fbx) {
+        scene.remove(fbx);
+        fbx = null;
+    }
+
+    // Start new scramble
+    introAnimation();
+}
+
+function introAnimation() {
     for (let i = 0; i < 3; i++) {
         for (let j = 0; j < 3; j++) {
             for (let k = 0; k < 3; k++) {
                 let x = (i - 1) * increment;
                 let y = (j - 1) * increment;
                 let z = (k - 1) * increment;
-                newCube(x, y, z);
+                newCube(x + 5, y - 2, z - 328);
+                originPositions.push({x, y, z});
             }
         }
     }
 
-    // Start new scramble
-    setTimeout(scrambleCube, 1200);
+    loader.load('Sporty_Granny.fbx', (loadedFbx) => {
+        fbx = loadedFbx;
+        fbx.scale.setScalar(0.3);
+        fbx.position.set(10, 0, -350);
+
+        const animLoader = new FBXLoader();
+        animLoader.setPath('./assets/');
+        animLoader.load('Throw_Object.fbx', (anim) => {
+            mixer = new THREE.AnimationMixer(fbx);
+            throwAction = mixer.clipAction(anim.animations[0]);
+            throwAction.reset();
+            throwAction.setLoop(THREE.LoopOnce);
+            throwAction.clampWhenFinished = true;
+            throwAction.play();
+
+            // Find the right hand bone
+            let rightHandBone;
+            fbx.traverse((bone) => {
+                if (bone.isBone && bone.name === 'mixamorigRightHand') {
+                    rightHandBone = bone;
+                }
+            });
+
+            const offset = new THREE.Vector3(0, -5, 0); // Adjust the offset as needed
+
+            let detachPosition = new THREE.Vector3();
+            let detachTimeElapsed = 0;
+
+            let stopExecution = false; // Flag to stop execution
+
+            // Update function to synchronize animations
+            function update() {
+                if (stopExecution) return; // Stop execution if the flag is set
+
+                const delta = clock.getDelta();
+                mixer.update(delta);
+
+                if (rightHandBone && !isDetached) {
+                    // Update the position of each small cube in the Rubik's cube based on the right hand bone's position
+                    const handPosition = rightHandBone.getWorldPosition(new THREE.Vector3());
+                    cubes.forEach((cube, index) => {
+                        cube.position.copy(handPosition).add(originPositions[index]).add(offset);
+                        cube.rubikPosition = cube.position.clone();
+                    });
+
+                    // Check if it's time to detach the cube
+                    if (throwAction.time >= detachTime) {
+                        isDetached = true;
+                        detachPosition.copy(rightHandBone.getWorldPosition(new THREE.Vector3()));
+                        detachTimeElapsed = 0;
+                    }
+                } else if (isDetached) {
+                    if (throwAction.time >= attachTime && throwAction.time < detachTime) {
+                        isDetached = false;
+                    } else if (throwAction.time >= detachTime) {
+                        detachTimeElapsed += delta;
+                        const time = detachTimeElapsed;
+
+                        const position = new THREE.Vector3().copy(detachPosition)
+                            .add(initialVelocity.clone().multiplyScalar(time))
+                            .add(gravity.clone().multiplyScalar(0.5 * time * time))
+                            .add(offset);
+
+                        if (position.y <= 0) {
+                            // Stop the entire function when the cube reaches y = 0
+                            cubes.forEach((cube, index) => {
+                                cube.position.set(0, 0, 0).add(originPositions[index]);
+                                cube.rotation.set(0, 0, 0);
+                                cube.rubikPosition = cube.position.clone();
+                            });
+
+                            camera.position.set(14, 9, -10);
+                            controls.target.set(0, 0, 0);
+                            camera.lookAt(0, 0, 0);
+                            controls.enabled = true; 
+
+                            // Set stopExecution to true to halt all further updates
+                            stopExecution = true;
+                            scene.remove(fbx);
+                            setTimeout(scrambleCube, 1200);
+                            return; // Exit the update function
+                        } else {
+                            cubes.forEach((cube, index) => {
+                                cube.position.copy(position).add(originPositions[index]);
+                                cube.rotation.x = 4.0 * Math.PI / 3.5 * (time);
+                                cube.rotation.y = 4.0 * Math.PI / 3.5 * (time);
+                                cube.rubikPosition = cube.position.clone();
+                            });
+
+                            const cameraOffset = new THREE.Vector3(60, 8, 47); // Adjust the offset as needed
+                            cameraOffset.divideScalar(1 + time);
+                            const timedShift = new THREE.Vector3(0, 2, -2); 
+                            cameraOffset.add(timedShift.multiplyScalar(time));
+
+                            // Calculate the center position of the Rubik's cube
+                            const cubeCenter = new THREE.Vector3();
+                            cubes.forEach((cube) => {
+                                cubeCenter.add(cube.position);
+                            });
+                            cubeCenter.divideScalar(cubes.length);
+
+                            camera.position.copy(position).add(cameraOffset);
+                            controls.target.copy(cubeCenter);
+                            camera.lookAt(cubeCenter);
+
+                            // Disable controls during the throw
+                            controls.enabled = false;
+                        }
+                    }
+                }
+
+                if (!stopExecution) {
+                    requestAnimationFrame(update);
+                }
+            }
+
+            update();
+        });
+
+        scene.add(fbx);
+    });
 }
 
 function animate() {
@@ -995,11 +1151,6 @@ function animate() {
 	renderer.render( scene, camera );
 }
 
-if (isScrambling)
-    setTimeout(scrambleCube, 1200);
-
-
-
 document.addEventListener("DOMContentLoaded", () => {
     const menu = document.getElementById('menu');
     const buttons = document.querySelectorAll('.difficulty-button');
@@ -1015,7 +1166,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Hide the menu and start the game
             menu.style.display = 'none';
-            scrambleCube();
+            createParticleSystem();
+            introAnimation();
         });
     });
 });
