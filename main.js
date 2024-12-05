@@ -421,47 +421,47 @@ function moveComplete() {
 }
 
 function isCubeSolved() {
-    const faces = {
+    const faceGroups = {
         right: [],
         left: [],
         top: [],
         bottom: [],
         front: [],
-        back: []
+        back: [],
     };
 
-    // Iterate through each cube and its stickers
+    // Group stickers by face
     cubes.forEach(cube => {
         cube.children.forEach(sticker => {
-            // Determine the face based on sticker position relative to the cube
-            const localPos = sticker.position.clone().applyMatrix4(cube.matrixWorld);
+            const worldPos = sticker.position.clone().applyMatrix4(cube.matrixWorld);
 
-            if (Math.abs(localPos.x - (cubeSize / 2 + 0.01)) < 0.01) {
-                faces.right.push(sticker.material.color.getHex());
-            } else if (Math.abs(localPos.x + (cubeSize / 2 + 0.01)) < 0.01) {
-                faces.left.push(sticker.material.color.getHex());
-            } else if (Math.abs(localPos.y - (cubeSize / 2 + 0.01)) < 0.01) {
-                faces.top.push(sticker.material.color.getHex());
-            } else if (Math.abs(localPos.y + (cubeSize / 2 + 0.01)) < 0.01) {
-                faces.bottom.push(sticker.material.color.getHex());
-            } else if (Math.abs(localPos.z - (cubeSize / 2 + 0.01)) < 0.01) {
-                faces.front.push(sticker.material.color.getHex());
-            } else if (Math.abs(localPos.z + (cubeSize / 2 + 0.01)) < 0.01) {
-                faces.back.push(sticker.material.color.getHex());
+            if (Math.abs(worldPos.x - (cubeSize / 2 + stickerRaise)) < 0.01) {
+                faceGroups.right.push(sticker.material.color.getHex());
+            } else if (Math.abs(worldPos.x + (cubeSize / 2 + stickerRaise)) < 0.01) {
+                faceGroups.left.push(sticker.material.color.getHex());
+            } else if (Math.abs(worldPos.y - (cubeSize / 2 + stickerRaise)) < 0.01) {
+                faceGroups.top.push(sticker.material.color.getHex());
+            } else if (Math.abs(worldPos.y + (cubeSize / 2 + stickerRaise)) < 0.01) {
+                faceGroups.bottom.push(sticker.material.color.getHex());
+            } else if (Math.abs(worldPos.z - (cubeSize / 2 + stickerRaise)) < 0.01) {
+                faceGroups.front.push(sticker.material.color.getHex());
+            } else if (Math.abs(worldPos.z + (cubeSize / 2 + stickerRaise)) < 0.01) {
+                faceGroups.back.push(sticker.material.color.getHex());
             }
         });
     });
 
-    // Check if each face is uniform in color
-    for (const face in faces) {
-        const colors = faces[face];
-        if (colors.length > 0 && !colors.every(color => color === colors[0])) {
-            return false; // Not all stickers on this face are the same color
+    // Validate uniformity of each face
+    for (const face in faceGroups) {
+        const stickers = faceGroups[face];
+        if (stickers.length === 0 || !stickers.every(color => color === stickers[0])) {
+            return false; // Face is not uniform in color
         }
     }
 
-    return true; 
+    return true; // All faces are uniform and cube is solved
 }
+
 
 let solvedAnimationTriggered = false;
 let isScrambling = true;
@@ -829,14 +829,25 @@ function updateDissolveEffect() {
     }
 }
 
-function startGame() {
-    const menu = document.getElementById('menu');
-    menu.style.opacity = '0'; // Fade out menu
-    setTimeout(() => {
-        menu.style.display = 'none'; // Hide menu after fade-out
-    }, 500);
-    console.log("Game started");
+function startGame(dimension) {
+    console.log(`Starting game with ${dimension}x${dimension} cube`);
+
+    // Clear any existing cubes in the scene
+    cubes.forEach(cube => scene.remove(cube));
+    cubes = [];
+
+    // Create the Rubik's cube for the selected dimension
+    createRubiksCube(dimension);
+
+    // Scramble the cube after creating it
+    scrambleCube();
+
+    // Adjust camera and lighting for larger cubes (optional)
+    adjustCameraAndLighting(dimension);
+
+    console.log(`Game setup complete for ${dimension}x${dimension} cube`);
 }
+
 
 const clock = new THREE.Clock();
 let mixer;
@@ -906,8 +917,7 @@ function resetGame() {
     introAnimation();
 }
 
-function introAnimation() {
-
+function introAnimation(selectedDimension = 3) {
     loader.load('Sporty_Granny.fbx', (loadedFbx) => {
         fbx = loadedFbx;
         fbx.scale.setScalar(0.35);
@@ -924,14 +934,16 @@ function introAnimation() {
         scene.add(spotLight.target);
         scene.add(frontLight);
 
-        for (let i = 0; i < 3; i++) {
-            for (let j = 0; j < 3; j++) {
-                for (let k = 0; k < 3; k++) {
-                    let x = (i - 1) * increment;
-                    let y = (j - 1) * increment;
-                    let z = (k - 1) * increment;
-                    newCube(x, y + 2.5, z - 323);
-                    originPositions.push({x, y, z});
+        // Dynamically generate cubes for the selected dimension
+        const offset = (selectedDimension - 1) / 2; // Center the cubes
+        for (let i = 0; i < selectedDimension; i++) {
+            for (let j = 0; j < selectedDimension; j++) {
+                for (let k = 0; k < selectedDimension; k++) {
+                    let x = (i - offset) * increment;
+                    let y = (j - offset) * increment;
+                    let z = (k - offset) * increment;
+                    newCube(x, y + 2.5, z - 323); // Adjust initial position
+                    originPositions.push({ x, y, z });
                 }
             }
         }
@@ -953,8 +965,7 @@ function introAnimation() {
                 fbx.visible = true;
                 throwAction.play();
             }, 20);
-          
-            // Find the right hand bone
+
             let rightHandBone;
             fbx.traverse((bone) => {
                 if (bone.isBone && bone.name === 'mixamorigRightHand') {
@@ -962,29 +973,26 @@ function introAnimation() {
                 }
             });
 
-            const offset = new THREE.Vector3(0, -5, 0); // Adjust the offset as needed
+            const offset = new THREE.Vector3(0, -5, 0);
 
             let detachPosition = new THREE.Vector3();
             let detachTimeElapsed = 0;
 
-            let stopExecution = false; // Flag to stop execution
+            let stopExecution = false;
 
-            // Update function to synchronize animations
             function update() {
-                if (stopExecution) return; // Stop execution if the flag is set
+                if (stopExecution) return;
 
                 const delta = clock.getDelta();
                 mixer.update(delta);
 
                 if (rightHandBone && !isDetached) {
-                    // Update the position of each small cube in the Rubik's cube based on the right hand bone's position
                     const handPosition = rightHandBone.getWorldPosition(new THREE.Vector3());
                     cubes.forEach((cube, index) => {
                         cube.position.copy(handPosition).add(originPositions[index]).add(offset);
                         cube.rubikPosition = cube.position.clone();
                     });
 
-                    // Check if it's time to detach the cube
                     if (throwAction.time >= detachTime) {
                         isDetached = true;
                         detachPosition.copy(rightHandBone.getWorldPosition(new THREE.Vector3()));
@@ -1003,7 +1011,6 @@ function introAnimation() {
                             .add(offset);
 
                         if (position.y <= 0) {
-                            // Stop the entire function when the cube reaches y = 0
                             cubes.forEach((cube, index) => {
                                 cube.position.set(0, 0, 0).add(originPositions[index]);
                                 cube.rotation.set(0, 0, 0);
@@ -1013,30 +1020,28 @@ function introAnimation() {
                             camera.position.set(5.5, 5.5, 11);
                             controls.target.set(0, 0, 0);
                             camera.lookAt(0, 0, 0);
-                            controls.enabled = true; 
+                            controls.enabled = true;
 
-                            // Set stopExecution to true to halt all further updates
                             stopExecution = true;
                             scene.remove(fbx);
                             scene.remove(spotLight);
                             scene.remove(spotLight.target);
                             scene.remove(frontLight);
                             setTimeout(scrambleCube, 1200);
-                            return; // Exit the update function
+                            return;
                         } else {
                             cubes.forEach((cube, index) => {
                                 cube.position.copy(position).add(originPositions[index]);
-                                cube.rotation.x = 3.0 * Math.PI / 3.5 * (time);
-                                cube.rotation.y = 3.0 * Math.PI / 3.5 * (time);
+                                cube.rotation.x = 3.0 * Math.PI / 3.5 * time;
+                                cube.rotation.y = 3.0 * Math.PI / 3.5 * time;
                                 cube.rubikPosition = cube.position.clone();
                             });
 
-                            const cameraOffset = new THREE.Vector3(60, 8, 47); // Adjust the offset as needed
+                            const cameraOffset = new THREE.Vector3(60, 8, 47);
                             cameraOffset.divideScalar(1 + time);
-                            const timedShift = new THREE.Vector3(0, 2, -2); 
+                            const timedShift = new THREE.Vector3(0, 2, -2);
                             cameraOffset.add(timedShift.multiplyScalar(time));
 
-                            // Calculate the center position of the Rubik's cube
                             const cubeCenter = new THREE.Vector3();
                             cubes.forEach((cube) => {
                                 cubeCenter.add(cube.position);
@@ -1047,7 +1052,6 @@ function introAnimation() {
                             controls.target.copy(cubeCenter);
                             camera.lookAt(cubeCenter);
 
-                            // Disable controls during the throw
                             controls.enabled = false;
                         }
                     }
@@ -1063,8 +1067,8 @@ function introAnimation() {
 
         scene.add(fbx);
     });
-    
 }
+
 
 function animate() {
     if (controls.enabled) {
@@ -1088,18 +1092,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const menu = document.getElementById('menu');
     const difficultyButtons = document.querySelectorAll('.difficulty-button');
     const dimensionButtons = document.querySelectorAll('.dimension-button');
-    let selectedDimension = null; // Track the selected dimension
+    let selectedDimension = 3; // Default to 3x3
 
     // Handle dimension button click
     dimensionButtons.forEach(button => {
         button.addEventListener('click', () => {
-            // Remove the 'selected' class from all buttons
             dimensionButtons.forEach(btn => btn.classList.remove('selected'));
-
-            // Add 'selected' class to the clicked button
             button.classList.add('selected');
-
-            // Update the selected dimension
             selectedDimension = parseInt(button.dataset.dimension, 10);
             console.log(`Selected dimension: ${selectedDimension}`);
         });
@@ -1109,16 +1108,33 @@ document.addEventListener("DOMContentLoaded", () => {
     difficultyButtons.forEach(button => {
         button.addEventListener('click', () => {
             const difficulty = button.dataset.difficulty;
-            if (difficulty === 'easy') scrambleMoves = 3;
-            else if (difficulty === 'medium') scrambleMoves = 6;
-            else if (difficulty === 'hard') scrambleMoves = 30;
+            scrambleMoves = difficulty === 'easy' ? 3 : difficulty === 'medium' ? 6 : 30;
 
             console.log(`Scramble Moves set to: ${scrambleMoves}`);
-
-            // Hide the menu and start the game
             menu.style.display = 'none';
-            createParticleSystem();
-            introAnimation();
+
+            // Start the game with the selected dimension
+            introAnimation(selectedDimension); // Pass the selected dimension
         });
     });
 });
+
+
+function createRubiksCube(dimension) {
+    cubes = []; // Clear existing cubes
+    originPositions = []; // Reset origin positions
+
+    const offset = (dimension - 1) / 2; // Center the cube
+
+    for (let i = 0; i < dimension; i++) {
+        for (let j = 0; j < dimension; j++) {
+            for (let k = 0; k < dimension; k++) {
+                const x = (i - offset) * increment;
+                const y = (j - offset) * increment;
+                const z = (k - offset) * increment;
+                newCube(x, y, z); // Create each cube piece
+                originPositions.push({ x, y, z }); // Store initial positions
+            }
+        }
+    }
+}
