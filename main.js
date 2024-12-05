@@ -829,15 +829,6 @@ function updateDissolveEffect() {
     }
 }
 
-function startGame() {
-    const menu = document.getElementById('menu');
-    menu.style.opacity = '0'; // Fade out menu
-    setTimeout(() => {
-        menu.style.display = 'none'; // Hide menu after fade-out
-    }, 500);
-    console.log("Game started");
-}
-
 const clock = new THREE.Clock();
 let mixer;
 let throwAction;
@@ -912,6 +903,7 @@ function introAnimation() {
         fbx = loadedFbx;
         fbx.scale.setScalar(0.35);
         fbx.position.set(10, 4.5, -345);
+        fbx.visible = true;
 
         const spotLight = new THREE.SpotLight(0xffffff, 1.5);
         spotLight.position.set(10, 10, -340);
@@ -928,9 +920,8 @@ function introAnimation() {
         console.log('Initial FBX Position:', fbx.position);
         console.log('Initial Camera Target:', controls.target);
 
-        let grannyPOV = new THREE.Vector3(10, 6, -345); // Raised and slightly forward for eye level
-        let cubePOV = new THREE.Vector3(0, 5.5, -323); 
-        let cubePosition = new THREE.Vector3(0, 2, -323); 
+        let grannyPOV = new THREE.Vector3(0, 80, -323); // Raised and slightly forward for eye level
+        let cubePOV = new THREE.Vector3(0, -20, -323); 
         let normalView = camera.position.clone(); // Save the normal camera view
 
         for (let i = 0; i < 3; i++) {
@@ -948,7 +939,6 @@ function introAnimation() {
         const animLoader = new FBXLoader();
         animLoader.setPath('./assets/');
         animLoader.load('Throw_Object.fbx', (anim) => {
-            fbx.visible = false;
 
             mixer = new THREE.AnimationMixer(fbx);
             throwAction = mixer.clipAction(anim.animations[0]);
@@ -959,34 +949,60 @@ function introAnimation() {
             mixer.update(0);
 
             setTimeout(() => {
-
-                // Start with granny POV
-                camera.position.copy(grannyPOV);
-                camera.lookAt(cubePosition);
-                controls.update();
-                fbx.visible = true;
-
-                setTimeout(() => {
-                    camera.position.copy(cubePOV);
-                    camera.lookAt(grannyPOV); 
-                    controls.update();
-                }, 1000);
-
-                setTimeout(() => {
-                    throwAction.play();
-                }, 2000);
             
-                // Then switch to normal view for the throw
-                setTimeout(() => {
-                    camera.position.copy(normalView);
-                    camera.lookAt(fbx.position);
+                // Transition to cube POV
+                let elapsed1 = 0;
+                const transitionDuration1 = 1.0; // 1 second duration
+                const startPosition1 = camera.position.clone();
+                const endPosition1 = cubePOV.clone();
+                const startTarget1 = controls.target.clone();
+                const endTarget1 = grannyPOV.clone();
+            
+                function animateFirstTransition() {
+                    elapsed1 += 1 / 60; // Simulate frame time (60 FPS)
+                    const alpha = Math.min(elapsed1 / transitionDuration1, 1);
+            
+                    // Smoothly interpolate position and target
+                    camera.position.lerpVectors(startPosition1, endPosition1, alpha);
+                    controls.target.lerpVectors(startTarget1, endTarget1, alpha);
                     controls.update();
-                }, 5000);
-
-                
-        
-            }, 0);
-
+            
+                    if (alpha < 1) {
+                        requestAnimationFrame(animateFirstTransition);
+                    } else {
+                        // Play throw animation after reaching the target position
+                        throwAction.play();
+            
+                        // After 4 seconds, transition back to the normal view
+                        setTimeout(() => {
+                            let elapsed2 = 0;
+                            const transitionDuration2 = 2.0; // 2 seconds duration
+                            const startPosition2 = camera.position.clone();
+                            const endPosition2 = normalView.clone();
+                            const startTarget2 = controls.target.clone();
+                            const endTarget2 = new THREE.Vector3(0, 42, -316);
+            
+                            function animateSecondTransition() {
+                                elapsed2 += 1 / 60; // Simulate frame time (60 FPS)
+                                const alpha = Math.min(elapsed2 / transitionDuration2, 1);
+            
+                                // Smoothly interpolate position and target
+                                camera.position.lerpVectors(startPosition2, endPosition2, alpha);
+                                controls.target.lerpVectors(startTarget2, endTarget2, alpha);
+                                controls.update();
+            
+                                if (alpha < 1) {
+                                    requestAnimationFrame(animateSecondTransition);
+                                }
+                            }
+            
+                            animateSecondTransition(); // Start second transition
+                        }, 2000);
+                    }
+                }
+            
+                animateFirstTransition(); // Start first transition
+            }, 500);
           
             // Find the right hand bone
             let rightHandBone;
