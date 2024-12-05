@@ -3,112 +3,6 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader';
 import * as dat from 'dat.gui';
 
-const styles = document.createElement('style');
-styles.textContent = `
-.congrats-message {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 20px 40px;
-    border-radius: 10px;
-    text-align: center;
-    font-family: Arial, sans-serif;
-    opacity: 0;
-    transition: opacity 0.5s;
-}
-
-.congrats-message h2 {
-    font-size: 46px;
-    margin-bottom: 10px;
-}
-
-.congrats-message p {
-    font-size: 34px;
-    margin: 0;
-}
-
-.fade-in {
-    opacity: 1;
-}
-
-.restart-button {
-    background-color: transparent; 
-    border: 2px solid #39FF14; 
-    color: white; 
-    padding: 15px 32px;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 28px;
-    font-weight: bold; 
-    margin: 50px; 
-    cursor: pointer;
-    border-radius: 12px; 
-    transition: color 0.3s; 
-}
-
-.restart-button:hover {
-    color: #39FF14; 
-    background-color: transparent; 
-}
-
-.menu-container {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 30px 50px;
-    border-radius: 10px;
-    text-align: center;
-    font-family: Arial, sans-serif;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-    opacity: 1;
-    transition: opacity 0.5s;
-}
-
-.menu-container h1 {
-    font-size: 46px;
-    margin-bottom: 20px;
-}
-
-.menu-container p {
-    font-size: 20px;
-    margin-bottom: 40px;
-}
-
-.difficulty-buttons {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-}
-
-.difficulty-button {
-    background-color: transparent;
-    border: 2px solid #39FF14;
-    color: white;
-    padding: 15px 30px;
-    font-size: 18px;
-    border-radius: 10px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: 0.3s ease;
-}
-
-.difficulty-button:hover {
-    background-color: #39FF14;
-    color: black;
-}
-
-
-`;
-document.head.appendChild(styles);
-
-
 // Difficulty selection and menu logic
 let scrambleMoves = 0; // Default difficulty
 
@@ -151,6 +45,7 @@ const colorState = {
 
 // Create GUI
 const gui = new dat.GUI();
+gui.hide();
 const colorsFolder = gui.addFolder('Face Colors');
 
 // Add color controls
@@ -632,6 +527,9 @@ function scrambleCube() {
         } else {
             console.log("Scramble complete!");
             isScrambling = false;
+            setTimeout(() => {
+                gui.show();
+            }, 700);
         }
     }
 
@@ -640,23 +538,34 @@ function scrambleCube() {
 
 
 function startSolvedAnimation() {
-    let solvedRotation = { y: 0 };
+    gui.hide();
+    let startTime = null;
+    const duration = 1000; 
+    const targetRotation = Math.PI * 2; // Full 360° rotation
 
-    // Use GSAP library for animation
-    // check if we are allowed to use this
-    gsap.to(solvedRotation, {
-        y: Math.PI * 2, // Full 360° rotation
-        duration: 1,
-        ease: "power1.inOut",
-        onUpdate: function () {
-            scene.rotation.y = solvedRotation.y;
-        },
-        onComplete: function () {
+    function animate(currentTime) {
+        if (!startTime) startTime = currentTime;
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        // Easing function to mimic "power1.inOut"
+        const eased = progress < 0.5
+            ? 2 * progress * progress
+            : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+        scene.rotation.y = targetRotation * eased;
+
+        if (progress < 1) {
+            requestAnimationFrame(animate);
+        } else {
+            // Animation complete
             startDissolveEffect();
             console.log("Congratulations! You solved the cube!");
             solvedAnimationTriggered = true;
         }
-    });
+    }
+
+    requestAnimationFrame(animate);
 }
 
 // particle explosion code
@@ -941,7 +850,7 @@ const attachTime = 1.5;
 const detachTime = 3.5;
 
 const initialVelocity = new THREE.Vector3(0, 5, 87);
-const gravity = new THREE.Vector3(0, -9.81, 0);
+const gravity = new THREE.Vector3(0, -15, 0); // changed the gravity a bit
 
 let originPositions = [];
 
@@ -998,33 +907,53 @@ function resetGame() {
 }
 
 function introAnimation() {
-    for (let i = 0; i < 3; i++) {
-        for (let j = 0; j < 3; j++) {
-            for (let k = 0; k < 3; k++) {
-                let x = (i - 1) * increment;
-                let y = (j - 1) * increment;
-                let z = (k - 1) * increment;
-                newCube(x + 5, y - 2, z - 328);
-                originPositions.push({x, y, z});
-            }
-        }
-    }
 
     loader.load('Sporty_Granny.fbx', (loadedFbx) => {
         fbx = loadedFbx;
-        fbx.scale.setScalar(0.3);
-        fbx.position.set(10, 0, -350);
+        fbx.scale.setScalar(0.35);
+        fbx.position.set(10, 4.5, -345);
+
+        const spotLight = new THREE.SpotLight(0xffffff, 1.5);
+        spotLight.position.set(10, 10, -340);
+        spotLight.target.position.set(10, 4.5, -345);
+
+        const frontLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        frontLight.position.set(10, 5, -340);
+
+        scene.add(spotLight);
+        scene.add(spotLight.target);
+        scene.add(frontLight);
+
+        for (let i = 0; i < 3; i++) {
+            for (let j = 0; j < 3; j++) {
+                for (let k = 0; k < 3; k++) {
+                    let x = (i - 1) * increment;
+                    let y = (j - 1) * increment;
+                    let z = (k - 1) * increment;
+                    newCube(x, y + 2.5, z - 323);
+                    originPositions.push({x, y, z});
+                }
+            }
+        }
 
         const animLoader = new FBXLoader();
         animLoader.setPath('./assets/');
         animLoader.load('Throw_Object.fbx', (anim) => {
+            fbx.visible = false;
+
             mixer = new THREE.AnimationMixer(fbx);
             throwAction = mixer.clipAction(anim.animations[0]);
             throwAction.reset();
             throwAction.setLoop(THREE.LoopOnce);
             throwAction.clampWhenFinished = true;
-            throwAction.play();
 
+            mixer.update(0);
+
+            setTimeout(() => {
+                fbx.visible = true;
+                throwAction.play();
+            }, 20);
+          
             // Find the right hand bone
             let rightHandBone;
             fbx.traverse((bone) => {
@@ -1081,7 +1010,7 @@ function introAnimation() {
                                 cube.rubikPosition = cube.position.clone();
                             });
 
-                            camera.position.set(14, 9, -10);
+                            camera.position.set(5.5, 5.5, 11);
                             controls.target.set(0, 0, 0);
                             camera.lookAt(0, 0, 0);
                             controls.enabled = true; 
@@ -1089,13 +1018,16 @@ function introAnimation() {
                             // Set stopExecution to true to halt all further updates
                             stopExecution = true;
                             scene.remove(fbx);
+                            scene.remove(spotLight);
+                            scene.remove(spotLight.target);
+                            scene.remove(frontLight);
                             setTimeout(scrambleCube, 1200);
                             return; // Exit the update function
                         } else {
                             cubes.forEach((cube, index) => {
                                 cube.position.copy(position).add(originPositions[index]);
-                                cube.rotation.x = 4.0 * Math.PI / 3.5 * (time);
-                                cube.rotation.y = 4.0 * Math.PI / 3.5 * (time);
+                                cube.rotation.x = 3.0 * Math.PI / 3.5 * (time);
+                                cube.rotation.y = 3.0 * Math.PI / 3.5 * (time);
                                 cube.rubikPosition = cube.position.clone();
                             });
 
@@ -1131,6 +1063,7 @@ function introAnimation() {
 
         scene.add(fbx);
     });
+    
 }
 
 function animate() {
