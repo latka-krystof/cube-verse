@@ -416,6 +416,7 @@ function moveComplete() {
     scene.remove(pivot);
 
     if (!isScrambling && isCubeSolved() && !solvedAnimationTriggered) {
+        stopTimer();
         startSolvedAnimation();
     }
 }
@@ -529,6 +530,7 @@ function scrambleCube() {
             isScrambling = false;
             setTimeout(() => {
                 gui.show();
+                startTimer();
             }, 700);
         }
     }
@@ -807,7 +809,7 @@ function updateDissolveEffect() {
         congrats.className = 'congrats-message';
         congrats.innerHTML = `
             <h2>winner winner chicken dinner</h2>
-            <p>congrats on solving our rubik's cube.</p>
+            <p>congrats on solving our rubik's cube in ${timeElapsed} seconds.</p>
             <button class="restart-button">let's go again.</button>
         `;
         document.body.appendChild(congrats);
@@ -895,6 +897,26 @@ function resetGame() {
 
     // Start new scramble
     introAnimation();
+}
+
+let timerElement = document.getElementById('timer');
+let timerInterval;
+let timeElapsed = 0;
+
+function startTimer() {
+    timeElapsed = 0;
+    timerElement.style.display = 'block';
+    timerElement.textContent = `Time: ${timeElapsed}s`;
+    timerInterval = setInterval(() => {
+        timeElapsed++;
+        timerElement.textContent = `Time: ${timeElapsed}s`;
+    }, 1000); // Update every second
+}
+
+// Function to stop the timer
+function stopTimer() {
+    clearInterval(timerInterval);
+    timerElement.style.display = 'none'; // Hide timer
 }
 
 function introAnimation() {
