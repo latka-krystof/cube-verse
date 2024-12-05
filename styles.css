@@ -1,58 +1,10 @@
-body { 
-    margin: 0; 
-}
-
-.congrats-message {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 20px 40px;
-    border-radius: 10px;
-    text-align: center;
-    font-family: monospace !important;
-    opacity: 0;
-    transition: opacity 0.5s;
-    white-space: nowrap;
-}
-
-.congrats-message h2 {
-    font-size: 40px;
-    margin-bottom: 10px;
-}
-
-.congrats-message p {
-    font-size: 32px;
+body {
     margin: 0;
-}
-
-.fade-in {
-    opacity: 1;
-}
-
-.restart-button {
-    background-color: transparent; 
-    border: 2px solid #39FF14; 
-    color: white; 
-    padding: 15px 32px;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 28px;
-    font-weight: bold; 
-    margin: 50px; 
-    cursor: pointer;
-    border-radius: 12px; 
-    transition: color 0.3s; 
     font-family: monospace !important;
+    background-color: #000; 
+    color: white;
 }
 
-.restart-button:hover {
-    color: #39FF14; 
-    background-color: transparent; 
-}
 
 .menu-container {
     display: flex;
@@ -65,39 +17,44 @@ body {
     left: 50%;
     transform: translate(-50%, -50%);
     background-color: rgba(0, 0, 0, 0.8);
-    color: white;
     padding: 30px 50px;
     border-radius: 10px;
     text-align: center;
-    font-family: monospace !important;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
     opacity: 1;
     transition: opacity 0.5s;
 }
 
-.menu-container h1 {
-    font-size: 46px;
-    margin-bottom: 20px;
+/* Typewriter Text */
+.typewriter-text {
+    font-size: 34px;
+    white-space: pre-line;
+    line-height: 1.6;
+    margin-bottom: 40px; /* Space below the typewriter text */
 }
 
-.menu-container p {
-    font-size: 20px;
-    margin-bottom: 40px;
+.line {
+    display: block;
 }
 
+/* Button Containers */
+.dimension-buttons,
 .difficulty-buttons {
     display: flex;
     justify-content: center;
     gap: 20px;
-    margin-top: 20px;
-    opacity: 0;
-    transition: opacity 1s;
+    margin-bottom: 20px; /* Spacing between button groups */
+    opacity: 0; /* Start hidden */
+    transition: opacity 1s ease; /* Smoothly appear */
 }
 
+.dimension-buttons.show,
 .difficulty-buttons.show {
-    opacity: 1;
+    opacity: 1; /* Make buttons visible */
 }
 
+/* Individual Buttons */
+.dimension-button,
 .difficulty-button {
     background-color: transparent;
     border: 2px solid #39FF14;
@@ -107,21 +64,75 @@ body {
     border-radius: 10px;
     cursor: pointer;
     font-weight: bold;
-    transition: 0.3s ease;
-    font-family: monospace !important;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+.dimension-button:hover,
 .difficulty-button:hover {
     background-color: #39FF14;
     color: black;
 }
 
-.typewriter-text {
-    font-family: monospace !important;
-    white-space: pre-line;
-    line-height: 1.6;
-    font-size: 34px;
+.dimension-button.selected {
+    background-color: green;
+    color: white;
+    pointer-events: none; /* Prevent reselection */
 }
-.line{
-    display: block;
+
+/* Congratulations Message */
+.congrats-message {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.8);
+    padding: 20px 40px;
+    border-radius: 10px;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.5s;
+}
+
+.congrats-message h2 {
+    font-size: 40px;
+    margin-bottom: 10px;
+}
+
+.congrats-message p {
+    font-size: 32px;
+    margin: 0;
+}
+
+.congrats-message.fade-in {
+    opacity: 1;
+}
+
+.restart-button {
+    background-color: transparent;
+    border: 2px solid #39FF14;
+    color: white;
+    padding: 15px 32px;
+    text-align: center;
+    display: inline-block;
+    font-size: 28px;
+    font-weight: bold;
+    margin: 50px;
+    cursor: pointer;
+    border-radius: 12px;
+    transition: color 0.3s ease, background-color 0.3s ease;
+}
+
+.restart-button:hover {
+    color: #39FF14;
+    background-color: transparent;
+}
+
+/* Particle Effects (Optional) */
+.particle-system {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
 }
