@@ -924,6 +924,15 @@ function introAnimation() {
         scene.add(spotLight.target);
         scene.add(frontLight);
 
+        console.log('Initial Camera Position:', camera.position);
+        console.log('Initial FBX Position:', fbx.position);
+        console.log('Initial Camera Target:', controls.target);
+
+        let grannyPOV = new THREE.Vector3(10, 6, -345); // Raised and slightly forward for eye level
+        let cubePOV = new THREE.Vector3(0, 5.5, -323); 
+        let cubePosition = new THREE.Vector3(0, 2, -323); 
+        let normalView = camera.position.clone(); // Save the normal camera view
+
         for (let i = 0; i < 3; i++) {
             for (let j = 0; j < 3; j++) {
                 for (let k = 0; k < 3; k++) {
@@ -950,9 +959,34 @@ function introAnimation() {
             mixer.update(0);
 
             setTimeout(() => {
+
+                // Start with granny POV
+                camera.position.copy(grannyPOV);
+                camera.lookAt(cubePosition);
+                controls.update();
                 fbx.visible = true;
-                throwAction.play();
-            }, 20);
+
+                setTimeout(() => {
+                    camera.position.copy(cubePOV);
+                    camera.lookAt(grannyPOV); 
+                    controls.update();
+                }, 1000);
+
+                setTimeout(() => {
+                    throwAction.play();
+                }, 2000);
+            
+                // Then switch to normal view for the throw
+                setTimeout(() => {
+                    camera.position.copy(normalView);
+                    camera.lookAt(fbx.position);
+                    controls.update();
+                }, 5000);
+
+                
+        
+            }, 0);
+
           
             // Find the right hand bone
             let rightHandBone;
