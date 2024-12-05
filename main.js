@@ -1086,16 +1086,34 @@ function animate() {
 
 document.addEventListener("DOMContentLoaded", () => {
     const menu = document.getElementById('menu');
-    const buttons = document.querySelectorAll('.difficulty-button');
+    const difficultyButtons = document.querySelectorAll('.difficulty-button');
+    const dimensionButtons = document.querySelectorAll('.dimension-button');
+    let selectedDimension = null; // Track the selected dimension
 
-    buttons.forEach(button => {
+    // Handle dimension button click
+    dimensionButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            // Remove the 'selected' class from all buttons
+            dimensionButtons.forEach(btn => btn.classList.remove('selected'));
+
+            // Add 'selected' class to the clicked button
+            button.classList.add('selected');
+
+            // Update the selected dimension
+            selectedDimension = parseInt(button.dataset.dimension, 10);
+            console.log(`Selected dimension: ${selectedDimension}`);
+        });
+    });
+
+    // Handle difficulty button click
+    difficultyButtons.forEach(button => {
         button.addEventListener('click', () => {
             const difficulty = button.dataset.difficulty;
-            if (difficulty === 'easy') scrambleMoves = 3;  // Fix for Easy
+            if (difficulty === 'easy') scrambleMoves = 3;
             else if (difficulty === 'medium') scrambleMoves = 6;
             else if (difficulty === 'hard') scrambleMoves = 30;
 
-            console.log(`Scramble Moves set to: ${scrambleMoves}`); // Debugging output
+            console.log(`Scramble Moves set to: ${scrambleMoves}`);
 
             // Hide the menu and start the game
             menu.style.display = 'none';
