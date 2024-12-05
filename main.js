@@ -14,9 +14,9 @@ renderer.setSize( window.innerWidth, window.innerHeight );
 document.body.appendChild( renderer.domElement );
 
 const controls = new OrbitControls(camera, renderer.domElement);
-camera.position.set(60, 50, -270);
-controls.target.set(0, 42, -316);
-camera.lookAt(0, 42, -316);
+camera.position.set(0, -20, -323); 
+controls.target.set(0, 80, -323);
+camera.lookAt(0, 80, -323);
 controls.enabled = true;
 
 scene.rotation.set(0, 0, 0);
@@ -869,9 +869,9 @@ function resetGame() {
     scene.rotation.set(0, 0, 0);
 
     // Reset camera position
-    camera.position.set(60, 50, -270);
-    controls.target.set(0, 42, -316);
-    camera.lookAt(0, 42, -316);
+    camera.position.set(0, -20, -323); 
+    controls.target.set(0, 80, -323);
+    camera.lookAt(0, 80, -323);
     controls.update();
 
     if (mixer) {
@@ -942,10 +942,6 @@ function introAnimation() {
         console.log('Initial FBX Position:', fbx.position);
         console.log('Initial Camera Target:', controls.target);
 
-        let grannyPOV = new THREE.Vector3(0, 80, -323); // Raised and slightly forward for eye level
-        let cubePOV = new THREE.Vector3(0, -20, -323); 
-        let normalView = camera.position.clone(); // Save the normal camera view
-
         for (let i = 0; i < 3; i++) {
             for (let j = 0; j < 3; j++) {
                 for (let k = 0; k < 3; k++) {
@@ -971,14 +967,18 @@ function introAnimation() {
             mixer.update(0);
 
             setTimeout(() => {
+                throwAction.play();
+            }, 200);
+
+            setTimeout(() => {
             
                 // Transition to cube POV
                 let elapsed1 = 0;
-                const transitionDuration1 = 1.0; // 1 second duration
+                const transitionDuration1 = 2.0; // 2 seconds duration
                 const startPosition1 = camera.position.clone();
-                const endPosition1 = cubePOV.clone();
+                const endPosition1 = new THREE.Vector3(57, 62, -260);
                 const startTarget1 = controls.target.clone();
-                const endTarget1 = grannyPOV.clone();
+                const endTarget1 = new THREE.Vector3(0, 42, -316);
             
                 function animateFirstTransition() {
                     elapsed1 += 1 / 60; // Simulate frame time (60 FPS)
@@ -992,39 +992,12 @@ function introAnimation() {
                     if (alpha < 1) {
                         requestAnimationFrame(animateFirstTransition);
                     } else {
-                        // Play throw animation after reaching the target position
-                        throwAction.play();
-            
-                        // After 4 seconds, transition back to the normal view
-                        setTimeout(() => {
-                            let elapsed2 = 0;
-                            const transitionDuration2 = 2.0; // 2 seconds duration
-                            const startPosition2 = camera.position.clone();
-                            const endPosition2 = normalView.clone();
-                            const startTarget2 = controls.target.clone();
-                            const endTarget2 = new THREE.Vector3(0, 42, -316);
-            
-                            function animateSecondTransition() {
-                                elapsed2 += 1 / 60; // Simulate frame time (60 FPS)
-                                const alpha = Math.min(elapsed2 / transitionDuration2, 1);
-            
-                                // Smoothly interpolate position and target
-                                camera.position.lerpVectors(startPosition2, endPosition2, alpha);
-                                controls.target.lerpVectors(startTarget2, endTarget2, alpha);
-                                controls.update();
-            
-                                if (alpha < 1) {
-                                    requestAnimationFrame(animateSecondTransition);
-                                }
-                            }
-            
-                            animateSecondTransition(); // Start second transition
-                        }, 2000);
+                        camera.lookAt(endTarget1);
                     }
                 }
             
                 animateFirstTransition(); // Start first transition
-            }, 500);
+            }, 2400);
           
             // Find the right hand bone
             let rightHandBone;
@@ -1118,6 +1091,8 @@ function introAnimation() {
                             camera.position.copy(position).add(cameraOffset);
                             controls.target.copy(cubeCenter);
                             camera.lookAt(cubeCenter);
+
+                            console.log('Current Camera Position:', camera.position);
 
                             // Disable controls during the throw
                             controls.enabled = false;
