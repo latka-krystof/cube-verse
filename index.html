@@ -2,31 +2,68 @@
 <html lang="en">
 	<head>
 		<meta charset="utf-8">
-		<title>Assignment1</title>
-		<style>
-			body { margin: 0; }
-		</style>
-		<body>
+		<title>CubeVerse</title>
+		<link rel="stylesheet" href="styles.css">
+		
+		<script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+		<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+		<script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+	</head>
+	<body>
 			<div id="menu" class="menu-container">
-				<h1>Interactive Rubik's Cube</h1>
-				<p>Welcome! Choose your difficulty and get ready to solve.</p>
+				<div class="typewriter-text"></div>
 				<div class="difficulty-buttons">
-					<button class="difficulty-button" data-difficulty="easy">Easy</button>
-					<button class="difficulty-button" data-difficulty="medium">Medium</button>
-					<button class="difficulty-button" data-difficulty="hard">Hard</button>
+					<button class="difficulty-button" data-difficulty="easy">easy</button>
+					<button class="difficulty-button" data-difficulty="medium">medium</button>
+					<button class="difficulty-button" data-difficulty="hard">hard</button>
 				</div>
 			</div>
+
+			<script>
+				const textContent = [
+					"Entering the CubeVerse...",
+					"Pick your challenge:",
+				];
+
+				const typewriterElement = document.querySelector('.typewriter-text');
+				const buttonsElement = document.querySelector('.difficulty-buttons');
+				let currentLineIndex = 0;
+				let currentCharIndex = 0;
+
+				function typeWriter() {
+					if (currentLineIndex < textContent.length) {
+						// Create new line element if it doesn't exist
+						if (!document.querySelector(`.line-${currentLineIndex}`)) {
+							const lineElement = document.createElement('span');
+							lineElement.className = `line line-${currentLineIndex}`;
+							typewriterElement.appendChild(lineElement);
+						}
+
+						const currentLine = document.querySelector(`.line-${currentLineIndex}`);
+						
+						if (currentCharIndex < textContent[currentLineIndex].length) {
+							currentLine.textContent += textContent[currentLineIndex][currentCharIndex];
+							currentCharIndex++;
+							setTimeout(typeWriter, 90);
+						} else {
+							currentLineIndex++;
+							currentCharIndex = 0;
+							setTimeout(typeWriter, 800);
+						}
+					} else {
+						// Show buttons after typing is done
+						setTimeout(() => {
+							buttonsElement.classList.add('show');
+						}, 100);
+					}
+				}
+
+				// Start the typewriter effect when the page loads
+				window.addEventListener('load', typeWriter);
+			</script>
 			
 			<script type="module" src="/main.js"></script>
-			<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.0/gsap.min.js"></script>
 			<script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
 		</body>
-		
-	</head>
-
-	<body>
-		<script type="module" src="/main.js"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.0/gsap.min.js"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
-	</body>
 </html>
