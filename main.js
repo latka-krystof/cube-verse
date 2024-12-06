@@ -27,12 +27,12 @@ const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 
 const faceColors = [0x00FFEA, 0xffffff, 0x98D136, 0xD97DF5, 0x6D5CED, 0xEC4A75]
-const cubeSize = 2;
-const stickerSize = 1.8;
-const stickerRaise = 0.01;
-const spacing = 0.05;
-const increment = cubeSize + spacing;
-const maxExtent = (cubeSize * 3 + spacing * 2 + 2 * stickerRaise) / 2;
+let cubeSize;
+let stickerSize;
+let stickerRaise;
+let spacing;
+let increment;
+let maxExtent;
 
 const colorState = {
     right: '#00FFEA',  
@@ -437,17 +437,17 @@ function isCubeSolved() {
             // Determine the face based on sticker position relative to the cube
             const localPos = sticker.position.clone().applyMatrix4(cube.matrixWorld);
 
-            if (Math.abs(localPos.x - (cubeSize / 2 + 0.01)) < 0.01) {
+            if (Math.abs(localPos.x - maxExtent) < 0.01) {
                 faces.right.push(sticker.material.color.getHex());
-            } else if (Math.abs(localPos.x + (cubeSize / 2 + 0.01)) < 0.01) {
+            } else if (Math.abs(localPos.x + maxExtent) < 0.01) {
                 faces.left.push(sticker.material.color.getHex());
-            } else if (Math.abs(localPos.y - (cubeSize / 2 + 0.01)) < 0.01) {
+            } else if (Math.abs(localPos.y - maxExtent) < 0.01) {
                 faces.top.push(sticker.material.color.getHex());
-            } else if (Math.abs(localPos.y + (cubeSize / 2 + 0.01)) < 0.01) {
+            } else if (Math.abs(localPos.y + maxExtent) < 0.01) {
                 faces.bottom.push(sticker.material.color.getHex());
-            } else if (Math.abs(localPos.z - (cubeSize / 2 + 0.01)) < 0.01) {
+            } else if (Math.abs(localPos.z - maxExtent) < 0.01) {
                 faces.front.push(sticker.material.color.getHex());
-            } else if (Math.abs(localPos.z + (cubeSize / 2 + 0.01)) < 0.01) {
+            } else if (Math.abs(localPos.z + maxExtent) < 0.01) {
                 faces.back.push(sticker.material.color.getHex());
             }
         });
@@ -896,7 +896,7 @@ function resetGame() {
     }
 
     // Start new scramble
-    introAnimation();
+    introAnimation(dimensions);
 }
 
 let timerElement = document.getElementById('timer');
@@ -919,8 +919,8 @@ function stopTimer() {
     timerElement.style.display = 'none'; // Hide timer
 }
 
-function introAnimation() {
-
+let dimensions = 3;
+function introAnimation(selectedDimension) {
     loader.load('Sporty_Granny.fbx', (loadedFbx) => {
         fbx = loadedFbx;
         fbx.scale.setScalar(0.35);
@@ -938,12 +938,19 @@ function introAnimation() {
         scene.add(spotLight.target);
         scene.add(frontLight);
 
-        for (let i = 0; i < 3; i++) {
-            for (let j = 0; j < 3; j++) {
-                for (let k = 0; k < 3; k++) {
-                    let x = (i - 1) * increment;
-                    let y = (j - 1) * increment;
-                    let z = (k - 1) * increment;
+        cubeSize = selectedDimension === 3 ? 2 : selectedDimension === 4 ? 1.5 : 1.2;
+        stickerSize = selectedDimension === 3 ? 1.8 : selectedDimension === 4 ? 1.35 : 1.08;
+        stickerRaise = 0.01;
+        spacing = 0.05;
+        increment = cubeSize + spacing;
+        maxExtent = (cubeSize * selectedDimension + spacing * (selectedDimension - 1) + 2 * stickerRaise) / 2;
+        const offset = (selectedDimension - 1) / 2;
+        for (let i = 0; i < selectedDimension; i++) {
+            for (let j = 0; j < selectedDimension; j++) {
+                for (let k = 0; k < selectedDimension; k++) {
+                    let x = (i - offset) * increment;
+                    let y = (j - offset) * increment;
+                    let z = (k - offset) * increment;
                     newCube(x, y + 2.5, z - 323);
                     originPositions.push({x, y, z});
                 }
@@ -1129,21 +1136,30 @@ function animate() {
 
 document.addEventListener("DOMContentLoaded", () => {
     const menu = document.getElementById('menu');
-    const buttons = document.querySelectorAll('.difficulty-button');
+    const difficultyButtons = document.querySelectorAll('.difficulty-button');
+    const dimensionButtons = document.querySelectorAll('.dimension-button');
 
-    buttons.forEach(button => {
+    // Handle dimension button click
+    dimensionButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            dimensionButtons.forEach(btn => btn.classList.remove('selected'));
+            button.classList.add('selected');
+            dimensions = parseInt(button.dataset.dimension, 10);
+            console.log(`Selected dimension: ${selectedDimension}`);
+        });
+    });
+
+    // Handle difficulty button click
+    difficultyButtons.forEach(button => {
         button.addEventListener('click', () => {
             const difficulty = button.dataset.difficulty;
-            if (difficulty === 'easy') scrambleMoves = 3;  // Fix for Easy
-            else if (difficulty === 'medium') scrambleMoves = 6;
-            else if (difficulty === 'hard') scrambleMoves = 30;
+            scrambleMoves = difficulty === 'easy' ? 3 : difficulty === 'medium' ? 6 : 30;
 
-            console.log(`Scramble Moves set to: ${scrambleMoves}`); // Debugging output
-
-            // Hide the menu and start the game
+            console.log(`Scramble Moves set to: ${scrambleMoves}`);
             menu.style.display = 'none';
             createParticleSystem();
-            introAnimation();
+            // Start the game with the selected dimension
+            introAnimation(dimensions); // Pass the selected dimension
         });
     });
 });

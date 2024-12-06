@@ -16,15 +16,15 @@
 
 			<div id="menu" class="menu-container">
 				<div class="typewriter-text"></div>
-				<div class="difficulty-buttons">
-					<button class="difficulty-button" data-difficulty="easy">easy</button>
-					<button class="difficulty-button" data-difficulty="medium">medium</button>
-					<button class="difficulty-button" data-difficulty="hard">hard</button>
-				</div>
 				<div class="dimension-buttons">
 					<button class="dimension-button" data-dimension="3">3x3</button>
 					<button class="dimension-button" data-dimension="4">4x4</button>
 					<button class="dimension-button" data-dimension="5">5x5</button>
+				</div>
+				<div class="difficulty-buttons">
+					<button class="difficulty-button" data-difficulty="easy">easy</button>
+					<button class="difficulty-button" data-difficulty="medium">medium</button>
+					<button class="difficulty-button" data-difficulty="hard">hard</button>
 				</div>
 			</div>
 
@@ -35,7 +35,8 @@
 				];
 
 				const typewriterElement = document.querySelector('.typewriter-text');
-				const buttonsElement = document.querySelector('.difficulty-buttons');
+				const difficultyButtonsElement = document.querySelector('.difficulty-buttons');
+				const dimensionButtonsElement = document.querySelector('.dimension-buttons');
 				let currentLineIndex = 0;
 				let currentCharIndex = 0;
 
@@ -62,7 +63,8 @@
 					} else {
 						// Show buttons after typing is done
 						setTimeout(() => {
-							buttonsElement.classList.add('show');
+							difficultyButtonsElement.classList.add('show');
+							dimensionButtonsElement.classList.add('show');
 						}, 100);
 					}
 				}
