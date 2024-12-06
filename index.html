@@ -63,7 +63,9 @@
 				}
 
 				// Start the typewriter effect when the page loads
-				window.addEventListener('load', typeWriter);
+				window.addEventListener('load', () => {
+					setTimeout(typeWriter, 300);  // 100ms delay before starting
+				});
 			</script>
 			
 			<script type="module" src="/main.js"></script>

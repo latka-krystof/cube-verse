@@ -938,10 +938,6 @@ function introAnimation() {
         scene.add(spotLight.target);
         scene.add(frontLight);
 
-        console.log('Initial Camera Position:', camera.position);
-        console.log('Initial FBX Position:', fbx.position);
-        console.log('Initial Camera Target:', controls.target);
-
         for (let i = 0; i < 3; i++) {
             for (let j = 0; j < 3; j++) {
                 for (let k = 0; k < 3; k++) {
@@ -968,7 +964,7 @@ function introAnimation() {
 
             setTimeout(() => {
                 throwAction.play();
-            }, 200);
+            }, 50);
 
             setTimeout(() => {
             
@@ -997,7 +993,7 @@ function introAnimation() {
                 }
             
                 animateFirstTransition(); // Start first transition
-            }, 2400);
+            }, 3500);
           
             // Find the right hand bone
             let rightHandBone;
