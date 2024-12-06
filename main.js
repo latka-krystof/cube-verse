@@ -418,6 +418,11 @@ function moveComplete() {
     if (!isScrambling && isCubeSolved() && !solvedAnimationTriggered) {
         startSolvedAnimation();
     }
+
+    
+
+
+
 }
 
 function isCubeSolved() {
@@ -933,7 +938,7 @@ function introAnimation(selectedDimension = 3) {
         scene.add(spotLight);
         scene.add(spotLight.target);
         scene.add(frontLight);
-
+//NEW CODE FOR 4x4 5x5
         // Dynamically generate cubes for the selected dimension
         const offset = (selectedDimension - 1) / 2; // Center the cubes
         for (let i = 0; i < selectedDimension; i++) {
@@ -1112,7 +1117,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             console.log(`Scramble Moves set to: ${scrambleMoves}`);
             menu.style.display = 'none';
-
+            createParticleSystem();
             // Start the game with the selected dimension
             introAnimation(selectedDimension); // Pass the selected dimension
         });
