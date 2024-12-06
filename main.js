@@ -14,9 +14,9 @@ renderer.setSize( window.innerWidth, window.innerHeight );
 document.body.appendChild( renderer.domElement );
 
 const controls = new OrbitControls(camera, renderer.domElement);
-camera.position.set(60, 50, -270);
-controls.target.set(0, 42, -316);
-camera.lookAt(0, 42, -316);
+camera.position.set(0, -20, -323); 
+controls.target.set(0, 80, -323);
+camera.lookAt(0, 80, -323);
 controls.enabled = true;
 
 scene.rotation.set(0, 0, 0);
@@ -416,6 +416,7 @@ function moveComplete() {
     scene.remove(pivot);
 
     if (!isScrambling && isCubeSolved() && !solvedAnimationTriggered) {
+        stopTimer();
         startSolvedAnimation();
     }
 }
@@ -529,6 +530,7 @@ function scrambleCube() {
             isScrambling = false;
             setTimeout(() => {
                 gui.show();
+                startTimer();
             }, 700);
         }
     }
@@ -807,7 +809,7 @@ function updateDissolveEffect() {
         congrats.className = 'congrats-message';
         congrats.innerHTML = `
             <h2>winner winner chicken dinner</h2>
-            <p>congrats on solving our rubik's cube.</p>
+            <p>congrats on solving our rubik's cube in ${timeElapsed} seconds.</p>
             <button class="restart-button">let's go again.</button>
         `;
         document.body.appendChild(congrats);
@@ -827,15 +829,6 @@ function updateDissolveEffect() {
             congrats.classList.add('fade-in');
         }, 10);
     }
-}
-
-function startGame() {
-    const menu = document.getElementById('menu');
-    menu.style.opacity = '0'; // Fade out menu
-    setTimeout(() => {
-        menu.style.display = 'none'; // Hide menu after fade-out
-    }, 500);
-    console.log("Game started");
 }
 
 const clock = new THREE.Clock();
@@ -876,9 +869,9 @@ function resetGame() {
     scene.rotation.set(0, 0, 0);
 
     // Reset camera position
-    camera.position.set(60, 50, -270);
-    controls.target.set(0, 42, -316);
-    camera.lookAt(0, 42, -316);
+    camera.position.set(0, -20, -323); 
+    controls.target.set(0, 80, -323);
+    camera.lookAt(0, 80, -323);
     controls.update();
 
     if (mixer) {
@@ -906,12 +899,33 @@ function resetGame() {
     introAnimation();
 }
 
+let timerElement = document.getElementById('timer');
+let timerInterval;
+let timeElapsed = 0;
+
+function startTimer() {
+    timeElapsed = 0;
+    timerElement.style.display = 'block';
+    timerElement.textContent = `Time: ${timeElapsed}s`;
+    timerInterval = setInterval(() => {
+        timeElapsed++;
+        timerElement.textContent = `Time: ${timeElapsed}s`;
+    }, 1000); // Update every second
+}
+
+// Function to stop the timer
+function stopTimer() {
+    clearInterval(timerInterval);
+    timerElement.style.display = 'none'; // Hide timer
+}
+
 function introAnimation() {
 
     loader.load('Sporty_Granny.fbx', (loadedFbx) => {
         fbx = loadedFbx;
         fbx.scale.setScalar(0.35);
         fbx.position.set(10, 4.5, -345);
+        fbx.visible = true;
 
         const spotLight = new THREE.SpotLight(0xffffff, 1.5);
         spotLight.position.set(10, 10, -340);
@@ -939,7 +953,6 @@ function introAnimation() {
         const animLoader = new FBXLoader();
         animLoader.setPath('./assets/');
         animLoader.load('Throw_Object.fbx', (anim) => {
-            fbx.visible = false;
 
             mixer = new THREE.AnimationMixer(fbx);
             throwAction = mixer.clipAction(anim.animations[0]);
@@ -950,9 +963,37 @@ function introAnimation() {
             mixer.update(0);
 
             setTimeout(() => {
-                fbx.visible = true;
                 throwAction.play();
-            }, 20);
+            }, 50);
+
+            setTimeout(() => {
+            
+                // Transition to cube POV
+                let elapsed1 = 0;
+                const transitionDuration1 = 2.0; // 2 seconds duration
+                const startPosition1 = camera.position.clone();
+                const endPosition1 = new THREE.Vector3(57, 62, -260);
+                const startTarget1 = controls.target.clone();
+                const endTarget1 = new THREE.Vector3(0, 42, -316);
+            
+                function animateFirstTransition() {
+                    elapsed1 += 1 / 60; // Simulate frame time (60 FPS)
+                    const alpha = Math.min(elapsed1 / transitionDuration1, 1);
+            
+                    // Smoothly interpolate position and target
+                    camera.position.lerpVectors(startPosition1, endPosition1, alpha);
+                    controls.target.lerpVectors(startTarget1, endTarget1, alpha);
+                    controls.update();
+            
+                    if (alpha < 1) {
+                        requestAnimationFrame(animateFirstTransition);
+                    } else {
+                        camera.lookAt(endTarget1);
+                    }
+                }
+            
+                animateFirstTransition(); // Start first transition
+            }, 3500);
           
             // Find the right hand bone
             let rightHandBone;
@@ -1046,6 +1087,8 @@ function introAnimation() {
                             camera.position.copy(position).add(cameraOffset);
                             controls.target.copy(cubeCenter);
                             camera.lookAt(cubeCenter);
+
+                            console.log('Current Camera Position:', camera.position);
 
                             // Disable controls during the throw
                             controls.enabled = false;
