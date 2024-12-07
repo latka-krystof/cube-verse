@@ -1145,7 +1145,6 @@ document.addEventListener("DOMContentLoaded", () => {
             dimensionButtons.forEach(btn => btn.classList.remove('selected'));
             button.classList.add('selected');
             dimensions = parseInt(button.dataset.dimension, 10);
-            console.log(`Selected dimension: ${selectedDimension}`);
         });
     });
 
