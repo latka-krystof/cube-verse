@@ -843,7 +843,7 @@ const attachTime = 1.5;
 const detachTime = 3.5;
 
 const initialVelocity = new THREE.Vector3(0, 5, 87);
-const gravity = new THREE.Vector3(0, -15, 0); // changed the gravity a bit
+const gravity = new THREE.Vector3(0, -15, 0); // force of gravity
 
 let originPositions = [];
 
