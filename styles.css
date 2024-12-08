@@ -30,7 +30,7 @@ body {
     font-size: 34px;
     white-space: pre-line;
     line-height: 1.6;
-    margin-bottom: 40px; /* Space below the typewriter text */
+    margin-bottom: 20px; /* Space below the typewriter text */
 }
 
 .line {
@@ -65,6 +65,10 @@ body {
     cursor: pointer;
     font-weight: bold;
     transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.difficulty-button{
+    margin: 8px 7px; /* Increased horizontal margin for difficulty buttons */
 }
 
 .dimension-button:hover,
