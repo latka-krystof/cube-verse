@@ -63,15 +63,25 @@
 					} else {
 						// Show buttons after typing is done
 						setTimeout(() => {
-							difficultyButtonsElement.classList.add('show');
 							dimensionButtonsElement.classList.add('show');
 						}, 100);
 					}
 				}
+				
+				// Handle dimension button clicks
+				document.querySelectorAll('.dimension-button').forEach(button => {
+					button.addEventListener('click', () => {
+						// Show difficulty buttons with animation
+						difficultyButtonsElement.style.display = 'block';
+						setTimeout(() => {
+							difficultyButtonsElement.classList.add('show');
+						}, 100);
+					});
+				});
 
 				// Start the typewriter effect when the page loads
 				window.addEventListener('load', () => {
-					setTimeout(typeWriter, 300);  // 100ms delay before starting
+					setTimeout(typeWriter, 300);  // delay before starting
 				});
 			</script>
 			
